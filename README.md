@@ -4,7 +4,8 @@ A pluggable linter for Kubernetes manifests inspired by golangci-lint, providing
 
 ## Features
 
-- **5 Pre-defined Linters**: Resource limits, security contexts, required labels, health probes, image tags, and RBAC security
+- **6 Pre-defined Linters**: Resource limits, security contexts, required labels, health probes, image tags, and RBAC security
+- **Custom Linters**: Define organization-specific rules using jq expressions without writing Go code
 - **Flexible Configuration**: YAML-based configuration with per-linter settings
 - **Multiple Output Formats**: Text (colored), JSON, YAML, GitHub Actions, SARIF
 - **Easy to Run**: Use via `go run` without installation
@@ -40,6 +41,7 @@ k8s-manifests-lint run
 | `health-probes` | Ensures pods have liveness and readiness probes |
 | `image-tags` | Validates container image tags (no latest, specific versions) |
 | `cluster-role-binding-security` | Validates ClusterRoleBindings for overly permissive group assignments |
+| `jq` | Evaluates custom jq expressions against Kubernetes resources |
 
 List all linters:
 
@@ -95,6 +97,37 @@ output:
   format: text
   color: auto
 ```
+
+## Custom Linters
+
+Define organization-specific linters using jq expressions without writing Go code:
+
+```yaml
+linters:
+  enable:
+    - require-owner-annotation  # Your custom linter
+
+  custom:
+    - name: require-owner-annotation
+      description: Ensures all resources have an owner annotation
+      type: jq
+      settings:
+        rules:
+          - expression: |
+              $object | has("metadata") and
+              (.metadata | has("annotations") and
+              (.annotations | has("owner"))) | not
+            message: Resource must have an 'owner' annotation
+            severity: warning
+            field: metadata.annotations.owner
+            suggestion: Add metadata.annotations.owner to specify the resource owner
+```
+
+Custom linters have access to:
+- `$object` - The current Kubernetes object being evaluated
+- `$objects` - Array of all objects being linted (for cross-resource validation)
+
+See [docs/custom-linters.md](docs/custom-linters.md) for more examples and detailed documentation.
 
 ## Usage
 

@@ -51,6 +51,14 @@ type LintersConfig struct {
 	Enable   []string                          `mapstructure:"enable"`
 	Disable  []string                          `mapstructure:"disable"`
 	Settings map[string]map[string]interface{} `mapstructure:"settings"`
+	Custom   []CustomLinter                    `mapstructure:"custom"`
+}
+
+type CustomLinter struct {
+	Name        string                 `mapstructure:"name"`
+	Description string                 `mapstructure:"description"`
+	Type        string                 `mapstructure:"type"`
+	Settings    map[string]interface{} `mapstructure:"settings"`
 }
 
 type OutputConfig struct {

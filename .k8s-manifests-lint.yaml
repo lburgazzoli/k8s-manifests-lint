@@ -38,8 +38,40 @@ linters:
     - health-probes
     - image-tags
     - cluster-role-binding-security
+    # Uncomment to enable custom linters:
+    # - require-owner-annotation
+    # - require-node-affinity
 
   disable: []
+
+  # Custom linters (optional)
+  # Define custom linters based on existing linter types
+  custom:
+    # Example: Custom jq-based linter to check for specific annotations
+    - name: require-owner-annotation
+      description: Ensures all resources have an owner annotation
+      type: jq
+      settings:
+        rules:
+          - expression: '$object | has("metadata") and (.metadata | has("annotations") and (.annotations | has("owner"))) | not'
+            message: Resource must have an 'owner' annotation
+            severity: warning
+            field: metadata.annotations.owner
+            suggestion: Add metadata.annotations.owner to specify the resource owner
+
+    # Example: Custom jq-based linter to check for node affinity
+    - name: require-node-affinity
+      description: Ensures deployments have node affinity configured
+      type: jq
+      settings:
+        rules:
+          - expression: |
+              $object.kind == "Deployment" and
+              ($object | .spec.template.spec.affinity.nodeAffinity // null | . == null)
+            message: Deployment should have node affinity configured
+            severity: info
+            field: spec.template.spec.affinity.nodeAffinity
+            suggestion: Consider adding node affinity to control pod placement
 
   # Per-linter settings
   settings:

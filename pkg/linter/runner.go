@@ -5,12 +5,15 @@ import (
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+
+	"github.com/lburgazzoli/k8s-manifests-lint/pkg/config"
 )
 
 type RunnerConfig struct {
 	EnabledLinters  []string
 	DisabledLinters []string
 	Settings        map[string]map[string]interface{}
+	CustomLinters   []config.CustomLinter
 }
 
 type Runner struct {
@@ -19,6 +22,28 @@ type Runner struct {
 }
 
 func NewRunner(config *RunnerConfig) (*Runner, error) {
+	for _, customLinter := range config.CustomLinters {
+		if customLinter.Name == "" {
+			return nil, fmt.Errorf("custom linter name is required")
+		}
+		if customLinter.Type == "" {
+			return nil, fmt.Errorf("custom linter %q: type is required", customLinter.Name)
+		}
+
+		l, err := CreateLinter(customLinter.Type, customLinter.Name, customLinter.Description)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create custom linter %q: %w", customLinter.Name, err)
+		}
+
+		if customLinter.Settings != nil {
+			if err := l.Configure(customLinter.Settings); err != nil {
+				return nil, fmt.Errorf("failed to configure custom linter %q: %w", customLinter.Name, err)
+			}
+		}
+
+		Register(l)
+	}
+
 	enabledMap := make(map[string]bool)
 	for _, name := range config.EnabledLinters {
 		enabledMap[name] = true

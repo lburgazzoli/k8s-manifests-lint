@@ -174,6 +174,7 @@ func runLint(cmd *cobra.Command, args []string) error {
 		EnabledLinters:  enabledLinters,
 		DisabledLinters: disabledLinters,
 		Settings:        cfg.Linters.Settings,
+		CustomLinters:   cfg.Linters.Custom,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to create runner: %w", err)

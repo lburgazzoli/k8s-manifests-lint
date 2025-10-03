@@ -62,3 +62,21 @@ func Names() []string {
 	sort.Strings(names)
 	return names
 }
+
+type Factory interface {
+	Create(name string, description string) Linter
+}
+
+var factories = make(map[string]Factory)
+
+func RegisterFactory(linterType string, factory Factory) {
+	factories[linterType] = factory
+}
+
+func CreateLinter(linterType string, name string, description string) (Linter, error) {
+	factory, ok := factories[linterType]
+	if !ok {
+		return nil, fmt.Errorf("no factory registered for linter type %q", linterType)
+	}
+	return factory.Create(name, description), nil
+}
