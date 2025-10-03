@@ -4,21 +4,43 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"time"
 
 	"github.com/spf13/viper"
 )
 
+type SourceType string
+
+const (
+	SourceTypeYAML       SourceType = "yaml"
+	SourceTypeHelm       SourceType = "helm"
+	SourceTypeKustomize  SourceType = "kustomize"
+	SourceTypeGoTemplate SourceType = "gotemplate"
+	SourceTypeTemplate   SourceType = "template"
+)
+
+func (s SourceType) String() string {
+	return string(s)
+}
+
+func (s SourceType) IsValid() bool {
+	switch s {
+	case SourceTypeYAML, SourceTypeHelm, SourceTypeKustomize, SourceTypeGoTemplate, SourceTypeTemplate, "":
+		return true
+	default:
+		return false
+	}
+}
+
 type Config struct {
-	Sources []Source              `mapstructure:"sources"`
-	Linters LintersConfig         `mapstructure:"linters"`
-	Output  OutputConfig          `mapstructure:"output"`
-	Exclude ExcludeConfig         `mapstructure:"exclude"`
-	Run     RunConfig             `mapstructure:"run"`
+	Sources []Source      `mapstructure:"sources"`
+	Linters LintersConfig `mapstructure:"linters"`
+	Output  OutputConfig  `mapstructure:"output"`
+	Exclude ExcludeConfig `mapstructure:"exclude"`
+	Run     RunConfig     `mapstructure:"run"`
 }
 
 type Source struct {
-	Type   string                 `mapstructure:"type"`
+	Type   SourceType             `mapstructure:"type"`
 	Path   string                 `mapstructure:"path"`
 	Chart  string                 `mapstructure:"chart"`
 	Values string                 `mapstructure:"values"`
@@ -26,8 +48,8 @@ type Source struct {
 }
 
 type LintersConfig struct {
-	Enable   []string                       `mapstructure:"enable"`
-	Disable  []string                       `mapstructure:"disable"`
+	Enable   []string                          `mapstructure:"enable"`
+	Disable  []string                          `mapstructure:"disable"`
 	Settings map[string]map[string]interface{} `mapstructure:"settings"`
 }
 
@@ -49,9 +71,7 @@ type ResourceFilter struct {
 }
 
 type RunConfig struct {
-	Concurrency int           `mapstructure:"concurrency"`
-	Timeout     time.Duration `mapstructure:"timeout"`
-	SkipDirs    []string      `mapstructure:"skip-dirs"`
+	SkipDirs []string `mapstructure:"skip-dirs"`
 }
 
 func Load(configFile string) (*Config, error) {
@@ -60,7 +80,6 @@ func Load(configFile string) (*Config, error) {
 	v.SetDefault("output.format", "text")
 	v.SetDefault("output.show-source", true)
 	v.SetDefault("output.color", "auto")
-	v.SetDefault("run.concurrency", 4)
 	v.SetDefault("run.timeout", "5m")
 
 	if configFile != "" {
@@ -98,14 +117,17 @@ func (c *Config) Validate() error {
 		"json":           true,
 		"yaml":           true,
 		"github-actions": true,
+		"sarif":          true,
 	}
 
 	if !validFormats[c.Output.Format] {
 		return fmt.Errorf("invalid output format: %s", c.Output.Format)
 	}
 
-	if c.Run.Concurrency < 1 {
-		return fmt.Errorf("run.concurrency must be at least 1")
+	for i, source := range c.Sources {
+		if !source.Type.IsValid() {
+			return fmt.Errorf("invalid source type at index %d: %s", i, source.Type)
+		}
 	}
 
 	return nil

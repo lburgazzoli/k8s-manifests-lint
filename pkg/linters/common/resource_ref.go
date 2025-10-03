@@ -1,4 +1,4 @@
-package linters
+package common
 
 import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -6,7 +6,7 @@ import (
 	"github.com/lburgazzoli/k8s-manifests-lint/pkg/linter"
 )
 
-func resourceRef(obj *unstructured.Unstructured) linter.ResourceRef {
+func ResourceRef(obj unstructured.Unstructured) linter.ResourceRef {
 	return linter.ResourceRef{
 		APIVersion: obj.GetAPIVersion(),
 		Kind:       obj.GetKind(),

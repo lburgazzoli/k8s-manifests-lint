@@ -1,4 +1,4 @@
-package k8s
+package jq
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 )
 
 // Query executes a jq-style query on an unstructured object
-func Query(obj *unstructured.Unstructured, query string) (interface{}, error) {
+func Query(obj unstructured.Unstructured, query string) (interface{}, error) {
 	q, err := gojq.Parse(query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse query %q: %w", query, err)
@@ -28,7 +28,7 @@ func Query(obj *unstructured.Unstructured, query string) (interface{}, error) {
 }
 
 // QueryArray executes a jq-style query and returns results as a slice
-func QueryArray(obj *unstructured.Unstructured, query string) ([]interface{}, error) {
+func QueryArray(obj unstructured.Unstructured, query string) ([]interface{}, error) {
 	q, err := gojq.Parse(query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse query %q: %w", query, err)
@@ -52,7 +52,7 @@ func QueryArray(obj *unstructured.Unstructured, query string) ([]interface{}, er
 }
 
 // QueryString executes a jq-style query and returns the result as a string
-func QueryString(obj *unstructured.Unstructured, query string) (string, bool, error) {
+func QueryString(obj unstructured.Unstructured, query string) (string, bool, error) {
 	v, err := Query(obj, query)
 	if err != nil {
 		return "", false, err
@@ -67,7 +67,7 @@ func QueryString(obj *unstructured.Unstructured, query string) (string, bool, er
 }
 
 // QueryBool executes a jq-style query and returns the result as a bool
-func QueryBool(obj *unstructured.Unstructured, query string) (bool, bool, error) {
+func QueryBool(obj unstructured.Unstructured, query string) (bool, bool, error) {
 	v, err := Query(obj, query)
 	if err != nil {
 		return false, false, err
@@ -82,7 +82,7 @@ func QueryBool(obj *unstructured.Unstructured, query string) (bool, bool, error)
 }
 
 // QueryInt executes a jq-style query and returns the result as an int
-func QueryInt(obj *unstructured.Unstructured, query string) (int, bool, error) {
+func QueryInt(obj unstructured.Unstructured, query string) (int, bool, error) {
 	v, err := Query(obj, query)
 	if err != nil {
 		return 0, false, err
@@ -102,40 +102,10 @@ func QueryInt(obj *unstructured.Unstructured, query string) (int, bool, error) {
 }
 
 // QueryExists checks if a field exists (returns non-null value)
-func QueryExists(obj *unstructured.Unstructured, query string) (bool, error) {
+func QueryExists(obj unstructured.Unstructured, query string) (bool, error) {
 	v, err := Query(obj, query)
 	if err != nil {
 		return false, err
 	}
 	return v != nil, nil
-}
-
-// GetContainers is a helper to get containers from various resource types
-func GetContainers(obj *unstructured.Unstructured) ([]interface{}, error) {
-	kind := obj.GetKind()
-
-	var query string
-	switch kind {
-	case "CronJob":
-		query = ".spec.jobTemplate.spec.template.spec.containers"
-	case "Pod":
-		query = ".spec.containers"
-	default:
-		query = ".spec.template.spec.containers"
-	}
-
-	result, err := Query(obj, query)
-	if err != nil {
-		return nil, err
-	}
-
-	if result == nil {
-		return nil, nil
-	}
-
-	if containers, ok := result.([]interface{}); ok {
-		return containers, nil
-	}
-
-	return nil, nil
 }
