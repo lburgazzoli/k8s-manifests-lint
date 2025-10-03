@@ -4,9 +4,9 @@ A pluggable linter for Kubernetes manifests inspired by golangci-lint, providing
 
 ## Features
 
-- **6 Pre-defined Linters**: Resource limits, security contexts, required labels, health probes, image tags, and RBAC security
+- **5 Pre-defined Linters**: Resource limits, security contexts, required labels, health probes, image tags, and RBAC security
 - **Flexible Configuration**: YAML-based configuration with per-linter settings
-- **Multiple Output Formats**: Text (colored), JSON, YAML, GitHub Actions
+- **Multiple Output Formats**: Text (colored), JSON, YAML, GitHub Actions, SARIF
 - **Easy to Run**: Use via `go run` without installation
 - **GitHub Action**: Ready-to-use composite action for CI/CD
 - **gojq Integration**: Elegant jq-style queries for writing custom linters
@@ -94,9 +94,6 @@ linters:
 output:
   format: text
   color: auto
-
-run:
-  concurrency: 4
 ```
 
 ## Usage
@@ -112,6 +109,7 @@ k8s-manifests-lint run --config=custom-config.yaml
 
 # Run with specific output format
 k8s-manifests-lint run --format=json
+k8s-manifests-lint run --format=sarif  # SARIF 2.1.0 for security tools
 
 # Enable/disable specific linters
 k8s-manifests-lint run --enable-linter=resource-limits --disable-linter=image-tags
@@ -247,8 +245,7 @@ spec:
 
 - `0`: Success, no issues found
 - `1`: Linting errors found
-- `2`: Configuration error
-- `3`: Runtime error
+- `2`: Fatal issues found
 - `4`: Warnings found (with `--fail-on-warning`)
 
 ## Development
