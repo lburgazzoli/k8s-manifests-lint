@@ -1,0 +1,80 @@
+# k8s-manifests-lint configuration file
+
+# Linters configuration
+linters:
+  enable:
+    - resource-limits
+    - security-context
+    - required-labels
+    - health-probes
+    - image-tags
+    - cluster-role-binding-security
+
+  disable: []
+
+  # Per-linter settings
+  settings:
+    resource-limits:
+      require-cpu-limit: true
+      require-memory-limit: true
+      require-cpu-request: true
+      require-memory-request: true
+      exclude-namespaces:
+        - kube-system
+
+    required-labels:
+      labels:
+        - app
+        - version
+      exclude-kinds:
+        - ConfigMap
+        - Secret
+
+    security-context:
+      require-run-as-non-root: true
+      require-read-only-root-filesystem: false
+      disallow-privilege-escalation: true
+      required-dropped-capabilities:
+        - ALL
+
+    health-probes:
+      require-liveness: true
+      require-readiness: true
+      exclude-kinds:
+        - Job
+        - CronJob
+
+    image-tags:
+      disallow-latest: true
+      require-digest: false
+      allowed-registries:
+        - docker.io
+        - gcr.io
+        - ghcr.io
+
+    cluster-role-binding-security:
+      disallowed-groups:
+        - system:authenticated
+        - system:unauthenticated
+        - system:serviceaccounts
+      warn-namespace-groups: true
+      allowed-roles-for-broad-groups:
+        - system:basic-user
+        - system:discovery
+      critical-roles:
+        - cluster-admin
+        - admin
+
+# Output configuration
+output:
+  format: text
+  show-source: true
+  color: auto
+
+# Run configuration
+run:
+  concurrency: 4
+  timeout: 5m
+  skip-dirs:
+    - vendor
+    - .git

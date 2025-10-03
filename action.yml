@@ -1,0 +1,102 @@
+name: 'K8s Manifests Lint'
+description: 'Lint Kubernetes manifests using k8s-manifests-lint'
+author: 'Luca Burgazzoli'
+
+branding:
+  icon: 'check-circle'
+  color: 'blue'
+
+inputs:
+  version:
+    description: 'Version of k8s-manifests-lint to use (e.g., @latest, @v1.0.0)'
+    required: false
+    default: '@latest'
+
+  config:
+    description: 'Path to config file'
+    required: false
+    default: '.k8s-manifests-lint.yaml'
+
+  fail-on-warning:
+    description: 'Fail on warnings'
+    required: false
+    default: 'false'
+
+  format:
+    description: 'Output format (text|json|yaml|github-actions)'
+    required: false
+    default: 'github-actions'
+
+  enable-linters:
+    description: 'Comma-separated list of linters to enable'
+    required: false
+
+  disable-linters:
+    description: 'Comma-separated list of linters to disable'
+    required: false
+
+  go-version:
+    description: 'Go version to use'
+    required: false
+    default: '1.24'
+
+  working-directory:
+    description: 'Working directory to run the linter in'
+    required: false
+    default: '.'
+
+outputs:
+  issues-count:
+    description: 'Number of issues found'
+
+  errors-count:
+    description: 'Number of errors'
+
+  warnings-count:
+    description: 'Number of warnings'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: ${{ inputs.go-version }}
+        cache: false
+
+    - name: Run k8s-manifests-lint
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        # Build arguments array
+        ARGS="run"
+
+        if [ -n "${{ inputs.config }}" ]; then
+          ARGS="$ARGS --config=${{ inputs.config }}"
+        fi
+
+        if [ -n "${{ inputs.format }}" ]; then
+          ARGS="$ARGS --format=${{ inputs.format }}"
+        fi
+
+        if [ "${{ inputs.fail-on-warning }}" = "true" ]; then
+          ARGS="$ARGS --fail-on-warning"
+        fi
+
+        if [ -n "${{ inputs.enable-linters }}" ]; then
+          IFS=',' read -ra LINTERS <<< "${{ inputs.enable-linters }}"
+          for linter in "${LINTERS[@]}"; do
+            ARGS="$ARGS --enable-linter=$linter"
+          done
+        fi
+
+        if [ -n "${{ inputs.disable-linters }}" ]; then
+          IFS=',' read -ra LINTERS <<< "${{ inputs.disable-linters }}"
+          for linter in "${LINTERS[@]}"; do
+            ARGS="$ARGS --disable-linter=$linter"
+          done
+        fi
+
+        # Run the linter using go run
+        echo "Running: go run github.com/lburgazzoli/k8s-manifests-lint/cmd/k8s-manifests-lint${{ inputs.version }} $ARGS"
+        go run github.com/lburgazzoli/k8s-manifests-lint/cmd/k8s-manifests-lint${{ inputs.version }} $ARGS
